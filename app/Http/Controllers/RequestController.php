@@ -150,7 +150,8 @@ class RequestController extends Controller
         $objectIndexArray = 0;
         for($i = 36; $i < 62; $i++)
         {
-            $line = preg_replace('/\s+/', '', $dataArray[$i]);
+//            $line = preg_replace('/\s+/', '', $dataArray[$i]);
+              $line = trim(preg_replace('/\s\s+/', ' ', str_replace("\n", " ", $dataArray[$i])));
             if(str_contains($line, 'Semester'))
             {
                 $objectIndexArray++;
@@ -163,7 +164,7 @@ class RequestController extends Controller
                 if($line != "")
                 {
                     $lineLimiter = 0;
-                    if($line != "RiwayatProses:" && $line != $objectName) array_push($statusRekening[$objectIndexArray - 1][$objectName], $line);
+                    if($line != "Riwayat Proses:" && $line != $objectName) array_push($statusRekening[$objectIndexArray - 1][$objectName], $line);
                 } else {
                     $lineLimiter++;
                 }
