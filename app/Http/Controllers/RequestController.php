@@ -27,7 +27,7 @@ class RequestController extends Controller
             return response()->json(['status' => 'bad request', 'reason' => $validator->errors(), 'time' => Carbon::now()], 400);
         }
 
-
+        //get form login untuk ambil cookie dan csrf token
         $res = Http::get('https://kip-kuliah.kemdikbud.go.id/siswa/auth/login');
         $cookies = $res->cookies()->toArray();
         $cookieJar = "";
@@ -37,11 +37,13 @@ class RequestController extends Controller
         $kutip2 = explode('"', $newLine[2]);
         $csrfToken = $kutip2[5];
 
+        //penggabungan cookie menjadi 1 string:  name=value;
         foreach ($cookies as $ck)
         {
             $cookieJar .= $ck["Name"]."=".$ck["Value"]."; ";
         }
 
+        //post login
         $res2 = Http::asForm()->withHeaders([
             'Cookie' => $cookieJar
         ])->post('https://kip-kuliah.kemdikbud.go.id/siswa/auth/login', [
@@ -49,6 +51,8 @@ class RequestController extends Controller
             'no_pendaftaran' => $request->no_pendaftaran,
             'kode_akses' => $request->kode_akses,
         ]);
+
+        //explode semua tabel
         $cardBody = explode("</tr>", $res2->body());
 
         if(!array_key_exists(12,$cardBody))
@@ -97,6 +101,54 @@ class RequestController extends Controller
 
     }
 
+    public function getDataKIPTest()
+    {
+        $res = Http::get('https://kip-kuliah.kemdikbud.go.id/siswa/auth/login');
+        $cookies = $res->cookies()->toArray();
+        $cookieJar = "";
+        $arr = explode("</div>", $res->body());
+        $div = explode("<div", $arr[1]);
+        $newLine = explode("\n", $div[2]);
+        $kutip2 = explode('"', $newLine[2]);
+        $csrfToken = $kutip2[5];
+
+        foreach ($cookies as $ck)
+        {
+            $cookieJar .= $ck["Name"]."=".$ck["Value"]."; ";
+        }
+
+        $res2 = Http::asForm()->withHeaders([
+            'Cookie' => $cookieJar
+        ])->post('https://kip-kuliah.kemdikbud.go.id/siswa/auth/login', [
+            '_token' => $csrfToken,
+            'no_pendaftaran' => '1120.201.00200.1502.579',
+            'kode_akses' => '97e95f',
+        ]);
+        $cardBody = explode("</tr>", $res2->body());
+
+        if(!array_key_exists(12,$cardBody))
+        {
+            return response()->json(['status' => 'unauthorized', 'reason' => 'Nomor Pendaftaran atau Kode Akses salah', 'time' => Carbon::now()], 401);
+        }
+
+        $DOM = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $DOM->loadHTML($res2->body());
+//        $DOM->loadHTMLFile(asset('/html/file.html'));
+        libxml_clear_errors();
+        $selector = new \DOMXPath($DOM);
+        $selector2 = new \DOMXPath($DOM);
+
+        $result = $selector->query('//table');
+        $datamhs = $this->getData($result);
+
+        $result2 = $selector2->query("//li[@class='user-header bg-primary']");
+        $akunmhs = $this->getName($result2);
+
+        return response()->json(['data_mahasiswa' => $datamhs, 'akun_mahasiswa' => $akunmhs]);
+
+    }
+
     function getName($result)
     {
         $line = "";
@@ -139,8 +191,13 @@ class RequestController extends Controller
 
         $universitas = explode("-", $dataArray[5])[1];
         $program_studi = explode("-", $dataArray[10])[1];
-        $nim = preg_replace('/\s+/', '', $dataArray[16]);
-        $no_rekening = preg_replace('/\s+/', '', $dataArray[29]);
+
+        $nim = "Data tidak ditemukan.";
+//        $nim = (preg_replace('/\s+/', '', $dataArray[16]) != "" ? preg_replace('/\s+/', '', $dataArray[16]) : preg_replace('/\s+/', '', $dataArray[15]));
+        $nim = ($this->smartSpaceRemover($dataArray[16]) ? $this->smartSpaceRemover($dataArray[16]) : $this->smartSpaceRemover($dataArray[15]));
+
+//        $no_rekening = (is_numeric(preg_replace('/\s+/', '', $dataArray[29])) ? preg_replace('/\s+/', '', $dataArray[29]) : preg_replace('/\s+/', '', $dataArray[28]));
+        $no_rekening = (is_numeric($this->smartSpaceRemover($dataArray[29])) ? $this->smartSpaceRemover($dataArray[29]) : $this->smartSpaceRemover($dataArray[28]));
 
         $statusRekening =[];
 
@@ -148,10 +205,23 @@ class RequestController extends Controller
         $objectStatus = false;
         $objectName = "";
         $objectIndexArray = 0;
-        for($i = 36; $i < 62; $i++)
+        $iterator = 36;
+
+        //cek jika array tidak tepat
+        if(str_contains($this->smartSpaceRemover($dataArray[36]), 'Riwayat'))
         {
+            $iterator = 35;
+        }
+
+        for($i = $iterator; $i < 66; $i++)
+        {
+            if(!array_key_exists($i, $dataArray))
+            {
+                break;
+            }
 //            $line = preg_replace('/\s+/', '', $dataArray[$i]);
-              $line = trim(preg_replace('/\s\s+/', ' ', str_replace("\n", " ", $dataArray[$i])));
+//              $line = trim(preg_replace('/\s\s+/', ' ', str_replace("\n", " ", $dataArray[$i])));
+              $line = $this->smartSpaceRemover($dataArray[$i]);
             if(str_contains($line, 'Semester'))
             {
                 $objectIndexArray++;
@@ -185,5 +255,12 @@ class RequestController extends Controller
             'program_studi' => $program_studi,
             'nim' => $nim,
             'no_rekening' => $no_rekening];
+
+
+    }
+
+    function smartSpaceRemover($data)
+    {
+        return trim(preg_replace('/\s\s+/', ' ', str_replace("\n", " ", $data)));
     }
 }
