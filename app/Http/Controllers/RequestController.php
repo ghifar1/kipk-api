@@ -121,8 +121,8 @@ class RequestController extends Controller
             'Cookie' => $cookieJar
         ])->post('https://kip-kuliah.kemdikbud.go.id/siswa/auth/login', [
             '_token' => $csrfToken,
-            'no_pendaftaran' => '1120.201.00200.1502.579',
-            'kode_akses' => '97e95f',
+            'no_pendaftaran' => '***',
+            'kode_akses' => '****',
         ]);
         $cardBody = explode("</tr>", $res2->body());
 
