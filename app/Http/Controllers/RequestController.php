@@ -21,10 +21,30 @@ class RequestController extends Controller
             'kode_akses' => 'required',
         ]);
 
-
         if($validator->fails())
         {
             return response()->json(['status' => 'bad request', 'reason' => $validator->errors(), 'time' => Carbon::now()], 400);
+        }
+
+        //akun dummy
+        if($request->no_pendaftaran == "0.0.0.0" && $request->kode_akses == "testdev")
+        {
+            return response()->json(['data_mahasiswa' => [
+                'statusRekening' => [
+                    ["Semester 1 (Ganjil 2021)" => [
+                        "[29 Oktober 2021] - Proses pencairan dana oleh Bank",
+                        "[15 Oktober 2021] - Diproses oleh Puslapdik",
+                        "[07 Oktober 2021] - Diajukan oleh Perguruan Tinggi"
+                    ]],
+                ],
+                'universitas' => 'Universitas Lima Tiga',
+                'program_studi' => 'S1 Teknik Mesin',
+                'nim' => '999102992100',
+                'no_rekening' => '3918829918829122'
+            ], 'akun_mahasiswa' => [
+                'nama_lengkap' => 'ANJAYANI SUKARAJIN',
+                'no_pendaftaran' => '1111.1111.1111.1111'
+            ]]);
         }
 
         //get form login untuk ambil cookie dan csrf token
