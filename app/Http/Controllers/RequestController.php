@@ -48,7 +48,7 @@ class RequestController extends Controller
             return response('Kode pendaftaran atau ID salah!', 400);
         }
 
-        dd($rJson);
+        return response()->json($rJson,200);
 
     }
 
