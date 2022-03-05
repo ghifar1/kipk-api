@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 //    return $request->user();
 //});
 
-Route::post('/getData', [\App\Http\Controllers\RequestController::class, 'getDataKIP']);
+
+Route::post('/getData', [\App\Http\Controllers\RequestController::class, 'algorithmv2']);
 Route::get('/getData', [\App\Http\Controllers\RequestController::class, 'getDataKIPTest']);
 Route::get('/getToken', [\App\Http\Controllers\HashController::class, 'getToken']);
